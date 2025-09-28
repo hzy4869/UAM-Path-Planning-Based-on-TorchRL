@@ -153,9 +153,13 @@ class ACEnvWrapper(gym.Wrapper):
                 print("for vid = ", vid)
                 print("ac pos: ", np.array([_x, _y]))
                 print("car pos:", np.array(veh_pos[:2]))
-                min_distance = min(min_distance, distance)
-                min_veh_id = vid
+                # min_distance = min(min_distance, distance)
+                # min_veh_id = vid
+                if distance < min_distance:
+                    min_distance = distance
+                    min_veh_id = vid
                 print("最近的车辆：", min_veh_id)
+                print("距离为：", min_distance)
                 
             
             # cover检测
