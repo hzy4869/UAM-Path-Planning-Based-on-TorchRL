@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<routes>
+    <!-- 定义两种车辆类型，颜色不同方便观察 -->
+    <vType id="car1" accel="2.6" decel="4.5" sigma="0.5" length="5.0" minGap="2.5" maxSpeed="100" color="1,0,0"/>
+    <vType id="car2" accel="2.6" decel="4.5" sigma="0.5" length="5.0" minGap="2.5" maxSpeed="100" color="1,1,1"/>
+
+    <!-- 车辆1：放在 J0 附近（E0 的起点），直接停下 -->
+    <vehicle id="car1_0" type="car1" depart="0">
+        <route edges="E0"/>  
+        <stop edge="E0" pos="5" duration="100000"/>  
+    </vehicle>
+
+    <!-- 车辆2：放在 J1 附近（E0 的终点），直接停下 -->
+    <vehicle id="car2_0" type="car2" depart="0">
+        <route edges="-E0"/>  
+        <stop edge="-E0" pos="5" duration="100000"/>  
+    </vehicle>
+</routes>
