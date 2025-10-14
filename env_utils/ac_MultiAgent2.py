@@ -48,7 +48,7 @@ class ACEnvWrapper(gym.Wrapper):
         return gym.spaces.Dict({
             "ac_attr": gym.spaces.Box(low=-np.inf, high=np.inf, shape=(self.max_states*3,), dtype=np.float32),
             "relative_vecs": gym.spaces.Box(low=-np.inf, high=np.inf, shape=(self.max_rel_veh, 2), dtype=np.float32),
-            "teammate_pos": gym.spaces.Box(low=-np.inf, high=np.inf, shape=(2,), dtype=np.float32)
+            # "teammate_pos": gym.spaces.Box(low=-np.inf, high=np.inf, shape=(2,), dtype=np.float32)
         })
     
     def prune_old_vehicles(self, current_veh_ids):
@@ -114,8 +114,9 @@ class ACEnvWrapper(gym.Wrapper):
             ac_attr = (feats['ac_attr'] - np.mean(feats['ac_attr'])) / (np.std(feats['ac_attr']) + 1e-8)
             relative_vecs = (feats['relative_vecs'] - np.mean(feats['relative_vecs'])) / (np.std(feats['relative_vecs']) + 1e-8)
             teammate_pos = (feats['teammate_pos'] - np.mean(feats['teammate_pos'])) / (np.std(feats['teammate_pos']) + 1e-8)
-            obs_dict[ac_id] = np.concatenate([ac_attr, relative_vecs.flatten(), teammate_pos])
+            obs_dict[ac_id] = np.concatenate([ac_attr, relative_vecs.flatten()])
         return obs_dict
+    
 
     def reward_wrapper(self, dones) -> Tuple[Dict[str, float], Dict[str, bool]]:
         '''
@@ -128,15 +129,6 @@ class ACEnvWrapper(gym.Wrapper):
         # 车辆是否被cover初始化
         print(self.latest_veh_pos)
         print("veh_cover is here", self.veh_covered)
-
-        # # 第一步：计算每个无人机最近的车辆 ID 和距离
-        # for ac_id in sorted(self.agents):  # 固定顺序
-        #     _x, _y = self.latest_ac_pos.get(ac_id, [0, 0])[:2]
-
-        #     for vid, veh_pos in self.latest_veh_pos.items():
-        #         distance = np.linalg.norm(np.array([_x, _y]) - np.array(veh_pos[:2]))
-        #         if distance <= 50:
-        #             self.veh_covered
                     
 
         for ac_id in self.agents:
@@ -158,16 +150,32 @@ class ACEnvWrapper(gym.Wrapper):
                 if distance < min_distance:
                     min_distance = distance
                     min_veh_id = vid
-                print("最近的车辆：", min_veh_id)
-                print("距离为：", min_distance)
+            print("最近的车辆：", min_veh_id)
+            print("距离为：", min_distance)
                 
             
             # cover检测
             if self.veh_covered[min_veh_id] == True:
                 print("检测到冲突！")
-                pass
+                min_distance = float('inf')
+                min_veh_id = None
+                for vid, veh_pos in self.latest_veh_pos.items():
+                    if self.veh_covered[vid] == False:
+                        distance = np.linalg.norm(np.array([_x, _y]) - np.array(veh_pos[:2]))
+                        if distance < min_distance:
+                            min_distance = distance
+                            min_veh_id = vid
+                
+                if min_distance <= 150:
+                    total_reward += 10
+                else:
+                    # 每增加 100 距离，奖励减少 2
+                    intervals = math.floor((min_distance - 50) / 50)
+                    reward = max(0, 10 - 1 * intervals)
+                    total_reward += reward
+                # pass
             else:
-                # 基于最近车辆的距离计算奖励
+                # 基于最近车辆的距离计算奖励-->基于最近的未被覆盖的车辆计算奖励
                 if min_distance <= 50:
                     self.veh_covered[min_veh_id] = True
                     total_reward += 15

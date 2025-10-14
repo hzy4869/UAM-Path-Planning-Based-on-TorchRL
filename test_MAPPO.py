@@ -250,7 +250,7 @@ def train_mappo():
         'drone_2': {
             "aircraft_type": "drone",
             "action_type": "horizontal_movement",
-            "position": (150, -100, 50),
+            "position": (300, -100, 50),
             "speed": 10,
             "heading": (1, 0, 0),
             "communication_range": 50,
@@ -258,6 +258,18 @@ def train_mappo():
             "img_file": drone_img_path,
             "custom_update_cover_radius": custom_update_cover_radius
         },
+
+        'drone_3': {
+            "aircraft_type": "drone",
+            "action_type": "horizontal_movement",
+            "position": (-100, -100, 50),
+            "speed": 10,
+            "heading": (1, 0, 0),
+            "communication_range": 50,
+            "if_sumo_visualization": True,
+            "img_file": drone_img_path,
+            "custom_update_cover_radius": custom_update_cover_radius
+        }
         # 如需更多无人机，按此添加
     }
 
