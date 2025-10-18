@@ -132,7 +132,7 @@ class ACEnvWrapper(gym.Wrapper):
                     
 
         for ac_id in self.agents:
-            print("------------------------")
+            # print("------------------------")
             total_reward = 0
             _x, _y = self.latest_ac_pos.get(ac_id, [0, 0])[:2]
 
@@ -142,21 +142,21 @@ class ACEnvWrapper(gym.Wrapper):
             min_veh_id = None
             for vid, veh_pos in self.latest_veh_pos.items():
                 distance = np.linalg.norm(np.array([_x, _y]) - np.array(veh_pos[:2]))
-                print("for vid = ", vid)
-                print("ac pos: ", np.array([_x, _y]))
-                print("car pos:", np.array(veh_pos[:2]))
+                # print("for vid = ", vid)
+                # print("ac pos: ", np.array([_x, _y]))
+                # print("car pos:", np.array(veh_pos[:2]))
                 # min_distance = min(min_distance, distance)
                 # min_veh_id = vid
                 if distance < min_distance:
                     min_distance = distance
                     min_veh_id = vid
-            print("最近的车辆：", min_veh_id)
-            print("距离为：", min_distance)
+            # print("最近的车辆：", min_veh_id)
+            # print("距离为：", min_distance)
                 
             
             # cover检测
             if self.veh_covered[min_veh_id] == True:
-                print("检测到冲突！")
+                # print("检测到冲突！")
                 min_distance = float('inf')
                 min_veh_id = None
                 for vid, veh_pos in self.latest_veh_pos.items():

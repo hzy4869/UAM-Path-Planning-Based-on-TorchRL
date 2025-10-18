@@ -17,7 +17,7 @@ from env_utils.ac_MultiAgent2 import ACEnvWrapper
 
 # ===================== 超参数 =====================
 SEED = 33
-NUM_UPDATES = 101 # initially 2000
+NUM_UPDATES = 501 # initially 2000
 STEPS_PER_UPDATE = 2048    # 采样步数（时间步）
 PPO_EPOCHS = 8
 MINI_BATCH_SIZE = 256
