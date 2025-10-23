@@ -1,3 +1,11 @@
+import sys
+import os
+sys.path.append(os.path.join(os.path.dirname(__file__), "rl\\sota-implementations\\multiagent"))
+sys.path.append(os.path.join(os.path.dirname(__file__), "rl"))
+from mappo_ippo import train
+from omegaconf import OmegaConf
+cfg = OmegaConf.load("rl\\sota-implementations\\multiagent\\mappo_ippo.yaml")
+
 from tshub.utils.get_abs_path import get_abs_path
 from tshub.utils.init_log import set_logger
 from loguru import logger
@@ -5,7 +13,8 @@ import argparse
 import torch
 
 from env_utils.ac_env import ACEnvironment
-from env_utils.ac_MultiAgent2 import ACEnvWrapper
+from env_utils.ac_MultiAgent_test import ACEnvWrapper
+from env_utils.make_multi_env import make_parallel_env
 
 
 path_convert = get_abs_path(__file__)
@@ -15,7 +24,7 @@ set_logger(path_convert('./'), file_log_level="ERROR", terminal_log_level="ERROR
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Parameters.')
-    parser.add_argument('--env_name', type=str, default="detroit_UAM", help='The name of environment, detroit_UAM, berlin_UAM')
+    parser.add_argument('--env_name', type=str, default="zeyun_UAM", help='The name of environment, detroit_UAM, berlin_UAM')
     parser.add_argument('--passenger_len', type=int, default=5, help='The number of passengers')
     parser.add_argument('--passenger_type', type=str, default="real_time", help='fix or real time')
     parser.add_argument('--snir_min', type=int, default=-17, help='The threshold of SNIR') # 最小SNIR值，小于这个值的乘客不参与训练
@@ -41,37 +50,37 @@ if __name__ == '__main__':
     }
 
     aircraft_inits = {
-    'drone_1': {
-        "aircraft_type": "drone",
-        "action_type": "horizontal_movement",
-        "position": (100, 200, 50),
-        "speed": 10,
-        "heading": (1, 1, 0),
-        "communication_range": 50,
-        "if_sumo_visualization": True,
-        "img_file": path_convert('./asset/drone.png'),
-    },
-    'drone_2': {
-        "aircraft_type": "drone",
-        "action_type": "horizontal_movement",
-        "position": (300, -100, 50),
-        "speed": 10,
-        "heading": (1, 0, 0),
-        "communication_range": 50,
-        "if_sumo_visualization": True,
-        "img_file": path_convert('./asset/drone.png'),
-    },
+        'drone_1': {
+            "aircraft_type": "drone",
+            "action_type": "horizontal_movement",
+            "position": (100, 200, 50),
+            "speed": 10,
+            "heading": (1, 1, 0),
+            "communication_range": 50,
+            "if_sumo_visualization": True,
+            "img_file": path_convert('./assets/drone.png'),
+        },
+        'drone_2': {
+            "aircraft_type": "drone",
+            "action_type": "horizontal_movement",
+            "position": (300, -100, 50),
+            "speed": 10,
+            "heading": (1, 0, 0),
+            "communication_range": 50,
+            "if_sumo_visualization": True,
+            "img_file": path_convert('./assets/drone.png'),
+        },
 
-    'drone_3': {
-        "aircraft_type": "drone",
-        "action_type": "horizontal_movement",
-        "position": (-100, -100, 50),
-        "speed": 10,
-        "heading": (1, 0, 0),
-        "communication_range": 50,
-        "if_sumo_visualization": True,
-        "img_file": path_convert('./asset/drone.png'),
-    }
+        'drone_3': {
+            "aircraft_type": "drone",
+            "action_type": "horizontal_movement",
+            "position": (-100, -100, 50),
+            "speed": 10,
+            "heading": (1, 0, 0),
+            "communication_range": 50,
+            "if_sumo_visualization": True,
+            "img_file": path_convert('./assets/drone.png'),
+        }
     }
 
     # passenger_seq = {
@@ -94,8 +103,28 @@ if __name__ == '__main__':
         use_gui=True,
     )
     env = ACEnvWrapper(env, aircraft_inits)
+    # obs = env.reset()
+    train(cfg, env=env)
+
+
+
+
+
+
+
+
+
+
+
+
+    # env = make_parallel_env(
+    #     sumo_cfg=sumo_cfg,
+    #     tls_ids=["1", "2"],
+    #     num_seconds=500,
+    #     aircraft_inits=aircraft_inits,
+    #     num_envs=1,   # 可以根据GPU/CPU能力调整
+    #     use_gui=False,
+    #     seed=42
+    # )
     
     
-
-
-
