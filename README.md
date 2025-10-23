@@ -34,10 +34,16 @@ cd UAM-Path-Planning
 pip install -r requirements.txt
 ```
 
-### 3. Train RL
+### 3. Install required package of torchRL
+The package of torchRL has been downloaded in the local repository, just need to add pre-requisite package.
+```bash
+pip install "torchrl[utils]"
+```
+
+### 4. Train RL
 You can train the RL model with the following code:
 ```bash
-python train_sigppo.py
+python torchRL_MAPPO.py
 ```
 
 
