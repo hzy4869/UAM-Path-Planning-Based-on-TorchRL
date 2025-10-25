@@ -22,6 +22,7 @@ class ACEnvWrapper(GymWrapper):
         self.aircraft_inits = aircraft_inits
         self.agents = list(aircraft_inits.keys())
         self.speed = aircraft_inits["drone_1"]["speed"]
+        
 
         self._pos_set = defaultdict(lambda: deque(maxlen=self.max_states))
         self.latest_ac_pos = {}
@@ -201,13 +202,10 @@ class ACEnvWrapper(GymWrapper):
         obs_td = TensorDict({
             "agents": TensorDict({
                 "observation": obs_tensor,
-                "done": torch.tensor([False for aid in agent_ids], dtype=bool).unsqueeze(-1),
-                "reward": torch.tensor([0 for aid in agent_ids], dtype=torch.float32).unsqueeze(-1),
-                "episode_reward": torch.tensor([0 for aid in agent_ids], dtype=torch.float32).unsqueeze(-1)
+                "episode_reward": torch.tensor([0.0 for _ in agent_ids], dtype= torch.float32).unsqueeze(-1)
             }, batch_size=[]), 
-            # "reward":torch.tensor([0 for aid in agent_ids], dtype=torch.float32).unsqueeze(-1),
+            "done": torch.tensor([False], dtype=bool)
         }, batch_size=[])
-
         return obs_td
 
 
@@ -226,45 +224,30 @@ class ACEnvWrapper(GymWrapper):
         obs_dict = self.feature_set_to_drone_obs(feature_set)
         obs_tensor = torch.stack([torch.tensor(obs_dict[aid], dtype=torch.float32) for aid in agent_ids])
 
-        # for aid in agent_ids:
-        #     if dones[aid] == True:
-        #         return self.reset()
-        ###############################
-        ## done在env走了500步的时候会变成True，所以这里也许需要手动reset环境，
-        ## 但是手动reset环境会导致reset and step输出不匹配，从而更快的报错。
-
-        ## 当前版本会在iteration运行完报错，因为没有reset过程，具体报错为episode_reward计算，
-        # 如果想看reset的报错问题，取消上面reset的注释即可。
-        ################################
-
         # 3️⃣ reward / done 直接整合成 Tensor
         
         ## 可能错误原因：done其实是一个标量而非list，也就是说环境只有一个done！
         aid_temp = agent_ids[0]
         ## 暂时保留第一个reward,后续需要加上sum
-        reward_tensor = torch.tensor([rewards[aid] for aid in agent_ids], dtype=torch.float32).unsqueeze(-1)
-        done_tensor = torch.tensor([dones[aid] for aid in agent_ids], dtype=bool).unsqueeze(-1)
-        terminated_tensor = torch.tensor([False for aid in agent_ids], dtype=bool).unsqueeze(-1)
-        truncated_tensor = torch.tensor([False for aid in agent_ids], dtype=bool).unsqueeze(-1)
+        reward_tensor = torch.tensor([1.0 for aid in agent_ids], dtype=torch.float32).unsqueeze(-1)
+        done_tensor = torch.tensor([dones[aid_temp]], dtype=bool)
+        terminated_tensor = torch.tensor([False for aid in agent_ids], dtype=bool)
+        truncated_tensor = torch.tensor([False for aid in agent_ids], dtype=bool)
         # print(reward_tensor.shape)
         # print(done_tensor.shape)
 
         obs_td = TensorDict({
             "agents": TensorDict({
                 "observation": obs_tensor,
-                "done": done_tensor,
-                "reward":reward_tensor,
-                "episode_reward": torch.tensor([0 for aid in agent_ids], dtype=torch.float32).unsqueeze(-1), ##必须修改
+                "reward": reward_tensor,
+                "episode_reward": torch.tensor([5.0 for _ in agent_ids], dtype= torch.float32).unsqueeze(-1)
             }, batch_size=[]),
-            "reward":reward_tensor, ## useful
+            "done": done_tensor, ## 成功传入 
         }, batch_size=[])
 
         # 4️⃣ 构建最终返回 TensorDict
         out_td = TensorDict({
             "next": obs_td,
-            "done": torch.tensor([True], dtype= bool),
-            # "terminated": terminated_tensor,
-            # "truncated": truncated_tensor
         }, batch_size=[])
         # print(out_td)
 

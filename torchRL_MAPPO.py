@@ -11,6 +11,7 @@ from tshub.utils.init_log import set_logger
 from loguru import logger
 import argparse
 import torch
+# from torchrl.envs import TransformedEnv, RewardSum
 
 from env_utils.ac_env import ACEnvironment
 from env_utils.ac_MultiAgent_test import ACEnvWrapper
@@ -100,9 +101,13 @@ if __name__ == '__main__':
         tls_ids=["1", "2"],
         num_seconds=500,
         aircraft_inits=aircraft_inits,
-        use_gui=True,
+        use_gui=False,
     )
     env = ACEnvWrapper(env, aircraft_inits)
+    # env = TransformedEnv(
+    #     env,
+    #     RewardSum(in_keys=[env.reward_key], out_keys=[("agents", "episode_reward")]),
+    # )
     # obs = env.reset()
     train(cfg, env=env)
 

@@ -29,6 +29,7 @@ class ACEnvironment(gym.Env):
         self.tls_ids = tls_ids
         self.aircraft_inits = aircraft_inits
         self.n_agents = len(aircraft_inits)
+        # self.batch_size = [self.n_agents]
 
 
         self.action_space = GymDict({
@@ -42,9 +43,15 @@ class ACEnvironment(gym.Env):
             "agents": GymDict({
                 "observation": Box(low=-np.inf, high=np.inf, shape=(self.n_agents, n_features), dtype=np.float32),
                 ## 这里的done需要二次修改，last point of trajectory，in torchrl/value/functional.py
-                "done": Box(low=0, high=1, shape=(self.n_agents, 1), dtype=bool),
-                "reward": Box(low=-np.inf, high=np.inf, shape=(self.n_agents, 1), dtype=np.float32),
+                # "done": Box(low=0, high=1, shape=(self.n_agents, 1), dtype=bool),
+                # "reward": Box(low=-np.inf, high=np.inf, shape=(self.n_agents, 1), dtype=np.float32),
                 "episode_reward": Box(low=-np.inf, high=np.inf, shape=(self.n_agents, 1), dtype=np.float32)
+            })
+        })
+
+        self.reward_space = GymDict({
+            "agents": GymDict({
+                "reward": Box(low=-np.inf, high=np.inf, shape=(self.n_agents, 1), dtype=np.float32),
             })
         })
 
