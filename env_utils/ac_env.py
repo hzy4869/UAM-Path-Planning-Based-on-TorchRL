@@ -29,8 +29,7 @@ class ACEnvironment(gym.Env):
         self.tls_ids = tls_ids
         self.aircraft_inits = aircraft_inits
         self.n_agents = len(aircraft_inits)
-        # self.batch_size = [self.n_agents]
-
+        
 
         self.action_space = GymDict({
             "agents": GymDict({
@@ -65,6 +64,10 @@ class ACEnvironment(gym.Env):
         truncated = dones
 
         return states, rewards, truncated, dones, infos
+    
+    def render(self, *args, **kwargs):
+        '''覆盖底层render，评估时需要调用，不渲染！'''
+        return
     
     def close(self) -> None:
         self.tsc_env._close_simulation()

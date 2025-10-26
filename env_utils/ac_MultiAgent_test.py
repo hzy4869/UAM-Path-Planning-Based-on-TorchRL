@@ -22,6 +22,9 @@ class ACEnvWrapper(GymWrapper):
         self.aircraft_inits = aircraft_inits
         self.agents = list(aircraft_inits.keys())
         self.speed = aircraft_inits["drone_1"]["speed"]
+
+        # self.num_envs = 1
+        # self.batch_size = torch.Size((self.num_envs,))
         
 
         self._pos_set = defaultdict(lambda: deque(maxlen=self.max_states))
@@ -126,52 +129,67 @@ class ACEnvWrapper(GymWrapper):
         rewards = {}
         done_dict = {aid: bool(dones) for aid in self.agents}  # 初始化 done_dict
         
-        # # 车辆是否被cover初始化
+        # 车辆是否被cover初始化
         # print(self.latest_veh_pos)
         # print("veh_cover is here", self.veh_covered)
+                    
 
         for ac_id in self.agents:
+            # print("------------------------")
             total_reward = 0
             _x, _y = self.latest_ac_pos.get(ac_id, [0, 0])[:2]
+
 
             # 计算与所有车辆的距离，找出最近的车辆
             min_distance = float('inf')
             min_veh_id = None
             for vid, veh_pos in self.latest_veh_pos.items():
                 distance = np.linalg.norm(np.array([_x, _y]) - np.array(veh_pos[:2]))
+                # print("for vid = ", vid)
+                # print("ac pos: ", np.array([_x, _y]))
+                # print("car pos:", np.array(veh_pos[:2]))
+                # min_distance = min(min_distance, distance)
+                # min_veh_id = vid
                 if distance < min_distance:
                     min_distance = distance
                     min_veh_id = vid
+            # print("最近的车辆：", min_veh_id)
+            # print("距离为：", min_distance)
                 
-                if self.veh_covered.get(min_veh_id, False):
-                    min_distance = float('inf')
-                    min_veh_id = None
-                    for vid, veh_pos in self.latest_veh_pos.items():
-                        if not self.veh_covered.get(vid, False):
-                            distance = np.linalg.norm(np.array([_x, _y]) - np.array(veh_pos[:2]))
-                            if distance < min_distance:
-                                min_distance = distance
-                                min_veh_id = vid
+            
+            # cover检测
+            if self.veh_covered[min_veh_id] == True:
+                # print("检测到冲突！")
+                min_distance = float('inf')
+                min_veh_id = None
+                for vid, veh_pos in self.latest_veh_pos.items():
+                    if self.veh_covered[vid] == False:
+                        distance = np.linalg.norm(np.array([_x, _y]) - np.array(veh_pos[:2]))
+                        if distance < min_distance:
+                            min_distance = distance
+                            min_veh_id = vid
                 
-                    if min_distance <= 150:
-                        total_reward += 10
-                    else:
-                        # 每增加 100 距离，奖励减少 2
-                        intervals = math.floor((min_distance - 50) / 50)
-                        reward = max(0, 10 - 1 * intervals)
-                        total_reward += reward
+                if min_distance <= 150:
+                    total_reward += 10
                 else:
-                    # 基于最近车辆的距离计算奖励-->基于最近的未被覆盖的车辆计算奖励
-                    if min_distance <= 50:
-                        self.veh_covered[min_veh_id] = True
-                        total_reward += 15
-                    elif min_distance <= 150:
-                        total_reward += 10
-                    else:
-                        # 每增加 100 距离，奖励减少 2
-                        intervals = math.floor((min_distance - 50) / 50)
-                        reward = max(0, 10 - 1 * intervals)
-                        total_reward += reward
+                    # 每增加 100 距离，奖励减少 2
+                    intervals = math.floor((min_distance - 50) / 50)
+                    reward = max(0, 10 - 1 * intervals)
+                    total_reward += reward
+                # pass
+            else:
+                # 基于最近车辆的距离计算奖励-->基于最近的未被覆盖的车辆计算奖励
+                if min_distance <= 50:
+                    self.veh_covered[min_veh_id] = True
+                    total_reward += 15
+                    
+                elif min_distance <= 150:
+                    total_reward += 10
+                else:
+                    # 每增加 100 距离，奖励减少 2
+                    intervals = math.floor((min_distance - 50) / 50)
+                    reward = max(0, 10 - 1 * intervals)
+                    total_reward += reward
 
             # 针对个体边界的惩罚
             if abs(_x) > self.x_range or abs(_y) > self.y_range:
@@ -182,6 +200,7 @@ class ACEnvWrapper(GymWrapper):
 
             rewards[ac_id] = total_reward
 
+        # print(rewards)
         return rewards, done_dict
 
     def reset(self, seed=1, tensordict=None, **kwargs):
@@ -229,7 +248,7 @@ class ACEnvWrapper(GymWrapper):
         ## 可能错误原因：done其实是一个标量而非list，也就是说环境只有一个done！
         aid_temp = agent_ids[0]
         ## 暂时保留第一个reward,后续需要加上sum
-        reward_tensor = torch.tensor([1.0 for aid in agent_ids], dtype=torch.float32).unsqueeze(-1)
+        reward_tensor = torch.tensor([rewards[aid] for aid in agent_ids], dtype=torch.float32).unsqueeze(-1)
         done_tensor = torch.tensor([dones[aid_temp]], dtype=bool)
         terminated_tensor = torch.tensor([False for aid in agent_ids], dtype=bool)
         truncated_tensor = torch.tensor([False for aid in agent_ids], dtype=bool)
@@ -250,7 +269,7 @@ class ACEnvWrapper(GymWrapper):
             "next": obs_td,
         }, batch_size=[])
         # print(out_td)
-
+        # print(reward_tensor)
         return out_td
 
 

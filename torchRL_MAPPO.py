@@ -101,15 +101,25 @@ if __name__ == '__main__':
         tls_ids=["1", "2"],
         num_seconds=500,
         aircraft_inits=aircraft_inits,
-        use_gui=False,
+        use_gui=True,
     )
     env = ACEnvWrapper(env, aircraft_inits)
+
+
+    env_test = ACEnvironment(
+        sumo_cfg=sumo_cfg,
+        tls_ids=["1", "2"],
+        num_seconds=500,
+        aircraft_inits=aircraft_inits,
+        use_gui=True,
+    )
+    env_test = ACEnvWrapper(env_test, aircraft_inits)
     # env = TransformedEnv(
     #     env,
     #     RewardSum(in_keys=[env.reward_key], out_keys=[("agents", "episode_reward")]),
     # )
     # obs = env.reset()
-    train(cfg, env=env)
+    train(cfg, env=env, env_test=env_test)
 
 
 

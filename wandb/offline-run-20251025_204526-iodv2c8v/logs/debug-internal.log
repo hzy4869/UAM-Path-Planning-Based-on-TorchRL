@@ -1,0 +1,12 @@
+{"time":"2025-10-25T20:45:29.337473+08:00","level":"INFO","msg":"stream: starting","core version":"0.22.2"}
+{"time":"2025-10-25T20:45:29.4659929+08:00","level":"WARN","msg":"featurechecker: GraphQL client is nil, skipping feature loading"}
+{"time":"2025-10-25T20:45:29.4666218+08:00","level":"INFO","msg":"stream: created new stream","id":"iodv2c8v"}
+{"time":"2025-10-25T20:45:29.4672101+08:00","level":"INFO","msg":"handler: started","stream_id":"iodv2c8v"}
+{"time":"2025-10-25T20:45:29.5402807+08:00","level":"INFO","msg":"stream: started","id":"iodv2c8v"}
+{"time":"2025-10-25T20:45:29.5402807+08:00","level":"INFO","msg":"sender: started","stream_id":"iodv2c8v"}
+{"time":"2025-10-25T20:45:29.5402807+08:00","level":"INFO","msg":"writer: started","stream_id":"iodv2c8v"}
+{"time":"2025-10-25T20:45:29.5414855+08:00","level":"WARN","msg":"runupserter: server does not expand metric globs but the x_server_side_expand_glob_metrics setting is set; ignoring"}
+{"time":"2025-10-25T20:46:10.275121+08:00","level":"INFO","msg":"stream: closing","id":"iodv2c8v"}
+{"time":"2025-10-25T20:46:10.2853168+08:00","level":"INFO","msg":"handler: closed","stream_id":"iodv2c8v"}
+{"time":"2025-10-25T20:46:10.2858664+08:00","level":"INFO","msg":"sender: closed","stream_id":"iodv2c8v"}
+{"time":"2025-10-25T20:46:10.2858664+08:00","level":"INFO","msg":"stream: closed","id":"iodv2c8v"}
