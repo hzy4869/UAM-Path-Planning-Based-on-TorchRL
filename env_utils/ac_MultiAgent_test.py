@@ -8,8 +8,10 @@ from typing import Dict, Tuple
 import math
 
 import torch
-from torchrl.data import Composite, Unbounded, DiscreteTensorSpec
+from torchrl.data import Composite, Unbounded, DiscreteTensorSpec, StackedComposite
 from tensordict import TensorDict
+from torchrl.data.tensor_specs import CompositeSpec, BoundedTensorSpec
+
 
 os.environ['OMP_NUM_THREADS'] = '1'
 
@@ -23,9 +25,9 @@ class ACEnvWrapper(GymWrapper):
         self.agents = list(aircraft_inits.keys())
         self.speed = aircraft_inits["drone_1"]["speed"]
 
-        # self.num_envs = 1
-        # self.batch_size = torch.Size((self.num_envs,))
-        
+
+        self.n_agents = 3
+        # self.batch_size = [3, ]
 
         self._pos_set = defaultdict(lambda: deque(maxlen=self.max_states))
         self.latest_ac_pos = {}
@@ -49,10 +51,6 @@ class ACEnvWrapper(GymWrapper):
 
         # self.reward_key = ("agents", "reward")
         # self.done_keys = [("agents", "done"), ("agents", "truncated")]
-
-    @property
-    def n_agents(self):
-        return len(self.aircraft_inits)
 
 
     def prune_old_vehicles(self, current_veh_ids):
@@ -83,7 +81,7 @@ class ACEnvWrapper(GymWrapper):
             # type: [[x y][x y]...[x y]*40]
             rel_vecs = []
             for vid, veh_info in vehicles.items():
-                veh_pos = np.array(veh_info['position'], dtype=np.float32)
+                veh_pos = np.array(veh_info['position'], dtype=np.float32)  
                 rel_vecs.append(veh_pos - ac_pos)  # 相对无人机位置
                 self.latest_veh_pos[vid] = veh_pos  # 保存车辆*绝对位置*
                 self.veh_covered[vid] = False
@@ -123,15 +121,10 @@ class ACEnvWrapper(GymWrapper):
 
     def reward_wrapper(self, dones) -> Tuple[Dict[str, float], Dict[str, bool]]:
         '''
-        2025/9/28: 一个无人机靠近车辆后（<50），会导致另一个无人机无法获取奖励（在同样也是靠近一个车辆
-        的情况下，但>50），暂时不影响收敛
+        10/27
         '''
         rewards = {}
         done_dict = {aid: bool(dones) for aid in self.agents}  # 初始化 done_dict
-        
-        # 车辆是否被cover初始化
-        # print(self.latest_veh_pos)
-        # print("veh_cover is here", self.veh_covered)
                     
 
         for ac_id in self.agents:
@@ -145,16 +138,9 @@ class ACEnvWrapper(GymWrapper):
             min_veh_id = None
             for vid, veh_pos in self.latest_veh_pos.items():
                 distance = np.linalg.norm(np.array([_x, _y]) - np.array(veh_pos[:2]))
-                # print("for vid = ", vid)
-                # print("ac pos: ", np.array([_x, _y]))
-                # print("car pos:", np.array(veh_pos[:2]))
-                # min_distance = min(min_distance, distance)
-                # min_veh_id = vid
                 if distance < min_distance:
                     min_distance = distance
                     min_veh_id = vid
-            # print("最近的车辆：", min_veh_id)
-            # print("距离为：", min_distance)
                 
             
             # cover检测
@@ -204,7 +190,7 @@ class ACEnvWrapper(GymWrapper):
         return rewards, done_dict
 
     def reset(self, seed=1, tensordict=None, **kwargs):
-        '''后两个无用的参数暂时不能删除，因为可能传入'''
+        ''''''
         print("reset")
         self.x_range, self.y_range = 800, 800
         raw_state = self._env.reset()
@@ -229,12 +215,12 @@ class ACEnvWrapper(GymWrapper):
 
 
     def step(self, action: TensorDict):
-        # 1️⃣ 处理动作
-        action_tensor = action["agents"]["action"]  # shape: [n_agents]
-        agent_ids = list(self.agents)  # ['drone_1', 'drone_2', 'drone_3']
-        action = {aid: int(action_tensor[i].item()) for i, aid in enumerate(agent_ids)}
 
-        new_actions = {aid: self.air_actions[int(act)] for aid, act in action.items()}
+        action_tensor = action["agents"]["action"]  # shape: [n_agents, n_actions]
+        agent_ids = list(self.agents)  # ['drone_1', 'drone_2', 'drone_3']
+        action_dict = {aid: int(act.item()) for aid, act in zip(agent_ids, action_tensor)}
+        new_actions = {aid: self.air_actions[act] for aid, act in action_dict.items()}
+
         states, rewards, truncated, dones, infos = self._env.step(new_actions)
 
         # 2️⃣ 生成 observation
@@ -259,7 +245,7 @@ class ACEnvWrapper(GymWrapper):
             "agents": TensorDict({
                 "observation": obs_tensor,
                 "reward": reward_tensor,
-                "episode_reward": torch.tensor([5.0 for _ in agent_ids], dtype= torch.float32).unsqueeze(-1)
+                "episode_reward": torch.tensor([5.0 for _ in agent_ids], dtype= torch.float32).unsqueeze(-1),
             }, batch_size=[]),
             "done": done_tensor, ## 成功传入 
         }, batch_size=[])
@@ -276,3 +262,26 @@ class ACEnvWrapper(GymWrapper):
     def close(self):
         # return super().close()
         return self._env.close()
+    
+
+# TensorDict(
+#     fields={
+#         agents: TensorDict(
+#             fields={
+#                 info: TensorDict(
+#                     fields={
+#                         ground_rew: Tensor(shape=torch.Size([10, 3, 1]), device=cpu, dtype=torch.float32, is_shared=False),
+#                         pos_rew: Tensor(shape=torch.Size([10, 3, 1]), device=cpu, dtype=torch.float32, is_shared=False)},
+#                     batch_size=torch.Size([10, 3]),
+#                     device=cpu,
+#                     is_shared=False),
+#                 observation: Tensor(shape=torch.Size([10, 3, 16]), device=cpu, dtype=torch.float32, is_shared=False),  
+#                 reward: Tensor(shape=torch.Size([10, 3, 1]), device=cpu, dtype=torch.float32, is_shared=False)},       
+#             batch_size=torch.Size([10, 3]),
+#             device=cpu,
+#             is_shared=False),
+#         done: Tensor(shape=torch.Size([10, 1]), device=cpu, dtype=torch.bool, is_shared=False),
+#         terminated: Tensor(shape=torch.Size([10, 1]), device=cpu, dtype=torch.bool, is_shared=False)},
+#     batch_size=torch.Size([10]),
+#     device=cpu,
+#     is_shared=False)

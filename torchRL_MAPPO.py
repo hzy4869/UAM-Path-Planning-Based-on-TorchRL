@@ -101,10 +101,12 @@ if __name__ == '__main__':
         tls_ids=["1", "2"],
         num_seconds=500,
         aircraft_inits=aircraft_inits,
-        use_gui=True,
+        use_gui=False,
     )
     env = ACEnvWrapper(env, aircraft_inits)
-
+    print('---------')
+    print(env.rollout(10))
+    print('----------')
 
     env_test = ACEnvironment(
         sumo_cfg=sumo_cfg,

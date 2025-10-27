@@ -29,11 +29,11 @@ class ACEnvironment(gym.Env):
         self.tls_ids = tls_ids
         self.aircraft_inits = aircraft_inits
         self.n_agents = len(aircraft_inits)
-        
 
         self.action_space = GymDict({
             "agents": GymDict({
-                "action": MultiDiscrete([9] * self.n_agents)
+                # 每个 agent 的动作是 0~8 的整数
+                "action": Box(low=0, high=8, shape=(self.n_agents, 1), dtype=np.int64)
             })
         })
 
@@ -41,9 +41,6 @@ class ACEnvironment(gym.Env):
         self.observation_space = GymDict({
             "agents": GymDict({
                 "observation": Box(low=-np.inf, high=np.inf, shape=(self.n_agents, n_features), dtype=np.float32),
-                ## 这里的done需要二次修改，last point of trajectory，in torchrl/value/functional.py
-                # "done": Box(low=0, high=1, shape=(self.n_agents, 1), dtype=bool),
-                # "reward": Box(low=-np.inf, high=np.inf, shape=(self.n_agents, 1), dtype=np.float32),
                 "episode_reward": Box(low=-np.inf, high=np.inf, shape=(self.n_agents, 1), dtype=np.float32)
             })
         })
@@ -53,6 +50,7 @@ class ACEnvironment(gym.Env):
                 "reward": Box(low=-np.inf, high=np.inf, shape=(self.n_agents, 1), dtype=np.float32),
             })
         })
+
 
     def reset(self):
         state_infos = self.tsc_env.reset()
