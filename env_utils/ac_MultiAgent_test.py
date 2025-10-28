@@ -8,7 +8,7 @@ from typing import Dict, Tuple
 import math
 
 import torch
-from torchrl.data import Composite, Unbounded, DiscreteTensorSpec, StackedComposite
+from torchrl.data import Composite, Unbounded, DiscreteTensorSpec, StackedComposite, Categorical
 from tensordict import TensorDict
 from torchrl.data.tensor_specs import CompositeSpec, BoundedTensorSpec
 
@@ -49,8 +49,30 @@ class ACEnvWrapper(GymWrapper):
             8: (0, 0),      # 暂停
         }
 
-        # self.reward_key = ("agents", "reward")
-        # self.done_keys = [("agents", "done"), ("agents", "truncated")]
+    # def _make_done_spec(self):
+    #     return Composite(
+    #         {
+    #             "done": Categorical(
+    #                 2, dtype=torch.bool, device=self.device, shape=(3, 1)
+    #             ),
+    #             "terminated": Categorical(
+    #                 2, dtype=torch.bool, device=self.device, shape=(3, 1)
+    #             ),
+    #             "truncated": Categorical(
+    #                 2, dtype=torch.bool, device=self.device, shape=(3, 1)
+    #             ),
+    #         },
+    #         shape=(3, ),
+    #     ) 
+
+    def _make_specs(self, env, batch_size=[3]):
+        # 调用父类方法生成基础 spec
+        # print("here")
+        super()._make_specs(env, batch_size=batch_size)
+        print("obs_spec")
+        print(self.observation_spec)
+        # print("done_spec")
+        # print(self.done_spec)
 
 
     def prune_old_vehicles(self, current_veh_ids):
@@ -67,7 +89,7 @@ class ACEnvWrapper(GymWrapper):
             if ac_info['aircraft_type'] != 'drone':
                 continue
 
-            ac_pos = np.array(ac_info['position'][:2], dtype=np.float32)  # type = [x y]
+            ac_pos = np.array(ac_info['position'][:2], dtype=np.float32) ## type = [x y]
             self.latest_ac_pos[ac_id] = ac_pos
             self._pos_set[ac_id].append(ac_pos)
 
@@ -81,9 +103,9 @@ class ACEnvWrapper(GymWrapper):
             # type: [[x y][x y]...[x y]*40]
             rel_vecs = []
             for vid, veh_info in vehicles.items():
-                veh_pos = np.array(veh_info['position'], dtype=np.float32)  
+                veh_pos = np.array(veh_info['position'], dtype=np.float32)
                 rel_vecs.append(veh_pos - ac_pos)  # 相对无人机位置
-                self.latest_veh_pos[vid] = veh_pos  # 保存车辆*绝对位置*
+                self.latest_veh_pos[vid] = veh_pos # 保存车辆*绝对位置*
                 self.veh_covered[vid] = False
 
             rel_vecs = np.array(rel_vecs[:self.max_rel_veh], dtype=np.float32)
@@ -96,7 +118,7 @@ class ACEnvWrapper(GymWrapper):
                     rel_vecs = pad  # 直接全部填充
 
             # 队友相对位置
-            teammate_vecs = np.zeros((1, 2), dtype=np.float32)
+            teammate_vecs = np.zeros((1,2), dtype=np.float32)
             for mate_id, mate_pos in self.latest_ac_pos.items():
                 if mate_id != ac_id:
                     teammate_vecs[0] = mate_pos[:2] - ac_pos[:2]
@@ -203,13 +225,17 @@ class ACEnvWrapper(GymWrapper):
             for aid in agent_ids
         ])  # shape: [n_agents, obs_dim]
 
+
         # 构建 TorchRL 规范的 TensorDict 结构
         obs_td = TensorDict({
             "agents": TensorDict({
                 "observation": obs_tensor,
-                "episode_reward": torch.tensor([0.0 for _ in agent_ids], dtype= torch.float32).unsqueeze(-1)
-            }, batch_size=[]), 
-            "done": torch.tensor([False], dtype=bool)
+                # "episode_reward": torch.tensor([0.0 for _ in agent_ids], dtype= torch.float32).unsqueeze(-1)
+            }, batch_size=[3,]), 
+            "done": torch.tensor([False], dtype=bool),
+            "terminated": torch.tensor([False], dtype=bool),
+            "truncated": torch.tensor([False], dtype=bool),
+            # "next": next
         }, batch_size=[])
         return obs_td
 
@@ -245,9 +271,11 @@ class ACEnvWrapper(GymWrapper):
             "agents": TensorDict({
                 "observation": obs_tensor,
                 "reward": reward_tensor,
-                "episode_reward": torch.tensor([5.0 for _ in agent_ids], dtype= torch.float32).unsqueeze(-1),
-            }, batch_size=[]),
+                # "episode_reward": torch.tensor([5.0 for _ in agent_ids], dtype= torch.float32).unsqueeze(-1),
+            }, batch_size=[3,]),
             "done": done_tensor, ## 成功传入 
+            "terminated": done_tensor, ## 成功传入 
+            "truncated": done_tensor, ## 成功传入 
         }, batch_size=[])
 
         # 4️⃣ 构建最终返回 TensorDict

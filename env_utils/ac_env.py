@@ -33,21 +33,21 @@ class ACEnvironment(gym.Env):
         self.action_space = GymDict({
             "agents": GymDict({
                 # 每个 agent 的动作是 0~8 的整数
-                "action": Box(low=0, high=8, shape=(self.n_agents, 1), dtype=np.int64)
+                "action": Box(low=0, high=8, shape=(1, ), dtype=np.int64)
             })
         })
 
         n_features = 16
         self.observation_space = GymDict({
             "agents": GymDict({
-                "observation": Box(low=-np.inf, high=np.inf, shape=(self.n_agents, n_features), dtype=np.float32),
-                "episode_reward": Box(low=-np.inf, high=np.inf, shape=(self.n_agents, 1), dtype=np.float32)
+                "observation": Box(low=-np.inf, high=np.inf, shape=(n_features,), dtype=np.float32),
+                # "episode_reward": Box(low=-np.inf, high=np.inf, shape=(1, ), dtype=np.float32)
             })
         })
 
         self.reward_space = GymDict({
             "agents": GymDict({
-                "reward": Box(low=-np.inf, high=np.inf, shape=(self.n_agents, 1), dtype=np.float32),
+                "reward": Box(low=-np.inf, high=np.inf, shape=(1, ), dtype=np.float32),
             })
         })
 

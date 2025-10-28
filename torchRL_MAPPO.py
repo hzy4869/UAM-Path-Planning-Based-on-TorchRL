@@ -105,7 +105,7 @@ if __name__ == '__main__':
     )
     env = ACEnvWrapper(env, aircraft_inits)
     print('---------')
-    print(env.rollout(10))
+    # print(env.rollout(10))
     print('----------')
 
     env_test = ACEnvironment(
